@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AssessmentController;
 use App\Http\Controllers\Api\LearnerProfileController;
+use App\Http\Controllers\Api\LearningPlanController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,6 @@ Route::prefix('onboarding')->group(function () {
     Route::post('/assessment/answer', [AssessmentController::class, 'answer']);
     Route::get('/assessment/result', [AssessmentController::class, 'result']);
 });
+
+Route::post('/plan/generate', [LearningPlanController::class, 'generate']);
+Route::get('/plan', [LearningPlanController::class, 'show']);

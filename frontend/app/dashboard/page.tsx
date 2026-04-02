@@ -24,20 +24,33 @@ type Assessment = {
     skill_scores: SkillScore[];
 };
 
+type LearningPlan = {
+    plan_data: {
+        [week: string]: {
+            [day: string]: string[];
+        };
+    };
+};
+
 export default function LearningProfileScreen() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [assessment, setAssessment] = useState<Assessment | null>(null);
+    const [plan, setPlan] = useState<LearningPlan | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [activeWeek, setActiveWeek] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchData() {
             try {
-                const [profileRes, assessmentRes] = await Promise.all([
+                const [profileRes, assessmentRes, planRes] = await Promise.all([
                     fetch("http://127.0.0.1:8000/api/onboarding/profile/latest", {
                         headers: { "Accept": "application/json" }
                     }),
                     fetch("http://127.0.0.1:8000/api/onboarding/assessment/result", {
+                        headers: { "Accept": "application/json" }
+                    }),
+                    fetch("http://127.0.0.1:8000/api/plan", {
                         headers: { "Accept": "application/json" }
                     })
                 ]);
@@ -51,6 +64,16 @@ export default function LearningProfileScreen() {
                     const assessmentData = await assessmentRes.json();
                     setAssessment(assessmentData);
                 }
+
+                if (planRes.ok) {
+                    const planData = await planRes.json();
+                    setPlan(planData);
+                    setActiveWeek(Object.keys(planData.plan_data)[0]);
+                } else if (planRes.status === 404) {
+                    console.log("Learning plan not yet generated.");
+                } else {
+                    console.error("Plan fetch error:", await planRes.text());
+                }
             } catch (err) {
                 console.error("Fetch error:", err);
                 setError("Failed to synchronize with learning data.");
@@ -60,6 +83,29 @@ export default function LearningProfileScreen() {
         }
         fetchData();
     }, []);
+
+    const handleInitialize = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch("http://127.0.0.1:8000/api/plan/generate", {
+                method: "POST",
+                headers: { "Accept": "application/json" }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPlan(data.plan);
+                setActiveWeek(Object.keys(data.plan.plan_data)[0]);
+            } else {
+                console.error("Generation failed:", await res.text());
+                setError("Expert tutoring system currently busy. Retrying synchronization...");
+            }
+        } catch (err) {
+            console.error("Initialization error:", err);
+            setError("Critical synchronization error. Please check engine connectivity.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -158,7 +204,50 @@ export default function LearningProfileScreen() {
                     </section>
                 </div>
 
-                {/* 4. User Custom Focus */}
+                {/* 4. Multi-Week Study Schedule */}
+                {plan && (
+                    <section className="space-y-6 border-t border-slate-200 pt-12">
+                        <div className="flex justify-between items-end">
+                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Personalized Curricullum</h2>
+                            <div className="flex gap-2">
+                                {Object.keys(plan.plan_data).map((week) => (
+                                    <button
+                                        key={week}
+                                        onClick={() => setActiveWeek(week)}
+                                        className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border transition-all ${activeWeek === week
+                                            ? "bg-slate-900 text-white border-slate-900"
+                                            : "bg-white text-slate-400 border-slate-200 hover:border-slate-400"
+                                            }`}
+                                    >
+                                        {week.split(':')[0]}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white border border-slate-200 p-8">
+                            <div className="mb-8">
+                                <h3 className="text-lg font-bold text-slate-900">{activeWeek}</h3>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Foundational Skills & Objective Alignment</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                                {activeWeek && Object.entries(plan.plan_data[activeWeek]).map(([day, tasks]) => (
+                                    <div key={day} className="space-y-3 p-4 bg-slate-50 border border-slate-100 rounded">
+                                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">{day}</h4>
+                                        <div className="space-y-2">
+                                            {tasks.map((task, i) => (
+                                                <p key={i} className="text-[10px] font-medium text-slate-600 leading-tight">• {task}</p>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* 5. User Custom Focus */}
                 <section className="space-y-6 border-t border-slate-200 pt-12">
                     <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Learner Priorities</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -168,12 +257,12 @@ export default function LearningProfileScreen() {
                         </div>
                         <div className="bg-white border border-slate-200 p-6 space-y-2">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daily Commitment</h3>
-                            <p className="text-sm font-bold text-slate-800">{profile?.daily_minutes} minutes / session</p>
+                            <p className="text-sm font-bold text-slate-800">{profile?.daily_minutes || 0} minutes / session</p>
                         </div>
                         <div className="bg-white border border-slate-200 p-6 space-y-2">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Focus Areas</h3>
                             <div className="flex flex-wrap gap-2 pt-1">
-                                {profile?.focus_areas.map((area, i) => (
+                                {profile?.focus_areas?.map((area, i) => (
                                     <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 uppercase">{area}</span>
                                 ))}
                             </div>
@@ -182,12 +271,21 @@ export default function LearningProfileScreen() {
                 </section>
 
                 {/* Footer Action */}
-                <div className="pt-12 text-center">
-                    <button className="px-12 py-4 bg-slate-900 text-white text-xs font-black uppercase tracking-[0.3em] hover:bg-slate-800 transition-all shadow-xl">
-                        Initialize First Lesson
-                    </button>
-                    <p className="pt-6 text-[10px] text-slate-300 font-bold uppercase tracking-widest">Academic Framework v1.0 • Data Synchronized</p>
-                </div>
+                {!plan ? (
+                    <div className="pt-12 text-center pb-12">
+                        <button
+                            onClick={handleInitialize}
+                            className="px-12 py-4 bg-slate-900 text-white text-xs font-black uppercase tracking-[0.3em] hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+                        >
+                            Initialize First Lesson
+                        </button>
+                        <p className="pt-6 text-[10px] text-slate-300 font-bold uppercase tracking-widest">Academic Framework v1.0 • Data Synchronized</p>
+                    </div>
+                ) : (
+                    <div className="pt-12 text-center pb-12 text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+                        Learning Plan Activated
+                    </div>
+                )}
             </main>
         </div>
     );

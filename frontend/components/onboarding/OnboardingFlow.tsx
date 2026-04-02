@@ -116,6 +116,12 @@ export default function OnboardingFlow() {
                 throw new Error(responseData.message || "Failed to save profile");
             }
 
+            // Trigger Learning Plan Generation
+            await fetch("http://127.0.0.1:8000/api/plan/generate", {
+                method: "POST",
+                headers: { "Accept": "application/json" }
+            });
+
             setIsSuccess(true);
             localStorage.removeItem("onboarding_progress");
 
