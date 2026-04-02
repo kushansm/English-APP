@@ -25,3 +25,7 @@ Route::post('/plan/task/toggle', [LearningPlanController::class, 'toggleTask']);
 
 Route::post('/exercise/submit', [App\Http\Controllers\Api\ExerciseController::class, 'submitResult']);
 Route::get('/mastery/overview', [App\Http\Controllers\Api\ExerciseController::class, 'overview']);
+
+Route::get('/progress/summary', [App\Http\Controllers\Api\ProgressController::class, 'summary']);
+Route::get('/progress/skills', [App\Http\Controllers\Api\ProgressController::class, 'skills']);
+Route::get('/progress/topics', [App\Http\Controllers\Api\ProgressController::class, 'topics']);

@@ -50,6 +50,16 @@ class MasteryTrackingService
         $record->last_attempted_at = Carbon::now();
         $record->save();
 
+        // Historical Logging
+        \App\Models\ExerciseLog::create([
+            'user_id' => $user->id,
+            'topic' => $topic,
+            'skill' => $skill,
+            'is_correct' => $isCorrect,
+            'difficulty' => $record->current_difficulty,
+            'mastery_score_at_time' => $record->mastery_score,
+        ]);
+
         return array_merge($recommendation, [
             'mastery_score' => $record->mastery_score,
             'streak' => $record->streak,
