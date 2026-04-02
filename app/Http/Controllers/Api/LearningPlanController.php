@@ -23,12 +23,7 @@ class LearningPlanController extends Controller
      */
     public function generate(Request $request): JsonResponse
     {
-        // Mocked user for demonstration
-        $user = User::first();
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
+        $user = $request->user();
 
         try {
             $planData = $this->generator->generate($user);
@@ -56,11 +51,7 @@ class LearningPlanController extends Controller
      */
     public function show(Request $request): JsonResponse
     {
-        $user = User::first(); // Mocked
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
+        $user = $request->user();
 
         $plan = $user->latestLearningPlan;
 
@@ -76,7 +67,7 @@ class LearningPlanController extends Controller
      */
     public function toggleTask(Request $request): JsonResponse
     {
-        $user = User::first(); // Mocked
+        $user = $request->user();
         $taskKey = $request->input('task_key'); // Format: "Week 1:Day 1:0"
 
         if (!$taskKey) {

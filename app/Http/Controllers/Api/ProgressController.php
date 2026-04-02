@@ -18,7 +18,7 @@ class ProgressController extends Controller
     public function summary(Request $request): JsonResponse
     {
         $days = $request->query('days', 7);
-        $user = User::first(); // Mocked
+        $user = $request->user();
 
         $query = ExerciseLog::where('user_id', $user->id)
             ->where('created_at', '>=', Carbon::now()->subDays($days));
@@ -44,7 +44,7 @@ class ProgressController extends Controller
     public function skills(Request $request): JsonResponse
     {
         $days = $request->query('days', 7);
-        $user = User::first(); // Mocked
+        $user = $request->user();
 
         $skills = ExerciseLog::where('user_id', $user->id)
             ->where('created_at', '>=', Carbon::now()->subDays($days))
@@ -65,7 +65,7 @@ class ProgressController extends Controller
     public function topics(Request $request): JsonResponse
     {
         $days = $request->query('days', 7);
-        $user = User::first(); // Mocked
+        $user = $request->user();
 
         $topics = ExerciseLog::where('user_id', $user->id)
             ->where('created_at', '>=', Carbon::now()->subDays($days))

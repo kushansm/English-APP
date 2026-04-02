@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/api";
 
 type Profile = {
     target_exam: string;
@@ -51,6 +53,7 @@ type ErrorLog = {
 };
 
 export default function LearningProfileScreen() {
+    const { user, logout } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [assessment, setAssessment] = useState<Assessment | null>(null);
     const [plan, setPlan] = useState<LearningPlan | null>(null);
@@ -67,18 +70,10 @@ export default function LearningProfileScreen() {
         async function fetchData() {
             try {
                 const [profileRes, assessmentRes, planRes, masteryRes] = await Promise.all([
-                    fetch("http://127.0.0.1:8000/api/onboarding/profile/latest", {
-                        headers: { "Accept": "application/json" }
-                    }),
-                    fetch("http://127.0.0.1:8000/api/onboarding/assessment/result", {
-                        headers: { "Accept": "application/json" }
-                    }),
-                    fetch("http://127.0.0.1:8000/api/plan", {
-                        headers: { "Accept": "application/json" }
-                    }),
-                    fetch("http://127.0.0.1:8000/api/mastery/overview", {
-                        headers: { "Accept": "application/json" }
-                    })
+                    apiFetch("/onboarding/profile/latest"),
+                    apiFetch("/onboarding/assessment/result"),
+                    apiFetch("/plan"),
+                    apiFetch("/mastery/overview")
                 ]);
 
                 if (profileRes.ok) {
@@ -116,9 +111,8 @@ export default function LearningProfileScreen() {
     const handleInitialize = async () => {
         setLoading(true);
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/plan/generate", {
+            const res = await apiFetch("/plan/generate", {
                 method: "POST",
-                headers: { "Accept": "application/json" }
             });
             if (res.ok) {
                 const data = await res.json();
@@ -146,12 +140,8 @@ export default function LearningProfileScreen() {
         setPlan({ ...plan, completed_tasks: nextCompleted });
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/plan/task/toggle", {
+            const res = await apiFetch("/plan/task/toggle", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
                 body: JSON.stringify({ task_key: taskKey })
             });
             if (!res.ok) {
@@ -185,9 +175,22 @@ export default function LearningProfileScreen() {
                             View Analytics
                         </Link>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{profile?.target_exam} Objective</p>
-                        <p className="text-sm font-medium">{assessment?.cefr_level || "N/A"} Proficiency</p>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{profile?.target_exam} Objective</p>
+                            <p className="text-sm font-medium">{assessment?.cefr_level || "N/A"} Proficiency</p>
+                        </div>
+                        {user && (
+                            <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+                                <span className="text-xs text-slate-500 font-medium hidden sm:block">{user.name}</span>
+                                <button
+                                    onClick={logout}
+                                    className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -259,38 +262,22 @@ export default function LearningProfileScreen() {
                                                 {(tasks as string[]).map((task: string, i: number) => {
                                                     const taskKey = `${activeWeek}:${day}:${i}`;
                                                     const isDone = plan.completed_tasks?.includes(taskKey);
-                                                    const lessonHref = `/dashboard/lesson?task=${encodeURIComponent(task)}&key=${encodeURIComponent(taskKey)}`;
                                                     return (
-                                                        <div key={i} className="flex items-center gap-4 group/task">
-                                                            {/* Checkbox to toggle completion */}
-                                                            <div
-                                                                onClick={() => toggleTask(taskKey)}
-                                                                className={`h-4 w-4 border flex items-center justify-center transition-all shrink-0 cursor-pointer ${isDone
-                                                                        ? "bg-slate-900 border-slate-900"
-                                                                        : "border-slate-200 group-hover/task:border-slate-400"
-                                                                    }`}
-                                                            >
+                                                        <div
+                                                            key={i}
+                                                            onClick={() => toggleTask(taskKey)}
+                                                            className="flex items-center gap-4 cursor-pointer group/task"
+                                                        >
+                                                            <div className={`h-4 w-4 border flex items-center justify-center transition-all ${isDone
+                                                                ? "bg-slate-900 border-slate-900"
+                                                                : "border-slate-200 group-hover/task:border-slate-400"
+                                                                }`}>
                                                                 {isDone && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M20 6L9 17l-5-5" /></svg>}
                                                             </div>
-                                                            {/* Task label — click to open lesson */}
-                                                            <Link
-                                                                href={lessonHref}
-                                                                className={`flex-1 text-sm font-medium transition-all ${isDone
-                                                                        ? "text-slate-300 line-through"
-                                                                        : "text-slate-700 hover:text-slate-900 hover:underline underline-offset-2"
-                                                                    }`}
-                                                            >
+                                                            <span className={`text-sm font-medium transition-all ${isDone ? "text-slate-300 line-through" : "text-slate-700 group-hover/task:text-slate-900"
+                                                                }`}>
                                                                 {task}
-                                                            </Link>
-                                                            {/* Open lesson button */}
-                                                            {!isDone && (
-                                                                <Link
-                                                                    href={lessonHref}
-                                                                    className="opacity-0 group-hover/task:opacity-100 text-[9px] font-black text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-all shrink-0"
-                                                                >
-                                                                    Start →
-                                                                </Link>
-                                                            )}
+                                                            </span>
                                                         </div>
                                                     );
                                                 })}

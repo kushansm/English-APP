@@ -7,6 +7,9 @@ import { TestStep } from "./TestStep";
 import { PreferencesStep } from "./PreferencesStep";
 import { SummaryStep } from "./SummaryStep";
 import { ProgressBar } from "../ui/ProgressBar";
+import { apiFetch } from "@/lib/api";
+
+import { useAuth } from "@/context/AuthContext";
 
 export type OnboardingData = {
     goal: string;
@@ -30,13 +33,14 @@ const INITIAL_DATA: OnboardingData = {
 
 const STEPS = [
     "Goal Selection",
-    "Level Estimation",
-    "AI Test Entry",
+    "Level Assessment",
+    "Diagnostic Test",
     "Preferences",
-    "Profile Summary",
+    "Finish",
 ];
 
 export default function OnboardingFlow() {
+    const { updateProfileStatus } = useAuth();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<OnboardingData>(INITIAL_DATA);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -86,29 +90,24 @@ export default function OnboardingFlow() {
             // Map frontend data to backend fields
             const backendData = {
                 target_exam: formData.goal,
-                target_level: "B1", // Placeholder
+                target_level: "B1", // Placeholder - will be updated by diagnostic test result in real flow
                 daily_minutes: formData.dailyMinutes,
                 learning_style: formData.learningStyle.toLowerCase(),
                 interests: formData.interests,
                 focus_areas: formData.focusAreas,
                 custom_focus: formData.customFocus,
-                target_date: "2026-12-31", // Placeholder
-                age_group: "25-34", // Placeholder
+                target_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
+                age_group: "25-34",
             };
 
-            const response = await fetch("http://127.0.0.1:8000/api/onboarding/profile", {
+            const response = await apiFetch("/onboarding/profile", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
                 body: JSON.stringify(backendData),
             });
 
             const responseData = await response.json();
 
             if (!response.ok) {
-                // Handle Laravel validation errors
                 if (responseData.errors) {
                     const errorMessages = Object.values(responseData.errors).flat().join("\n");
                     throw new Error(errorMessages);
@@ -117,18 +116,20 @@ export default function OnboardingFlow() {
             }
 
             // Trigger Learning Plan Generation
-            await fetch("http://127.0.0.1:8000/api/plan/generate", {
-                method: "POST",
-                headers: { "Accept": "application/json" }
+            await apiFetch("/plan/generate", {
+                method: "POST"
             });
+
+            // Mark profile as completed in AuthContext
+            updateProfileStatus(true);
 
             setIsSuccess(true);
             localStorage.removeItem("onboarding_progress");
 
-            // Optional: Redirect after a delay
+            // Redirect after a delay
             setTimeout(() => {
                 window.location.href = '/dashboard';
-            }, 3000);
+            }, 2500);
 
         } catch (error) {
             console.error("Submission error:", error);
@@ -141,47 +142,74 @@ export default function OnboardingFlow() {
     if (!isLoaded) return null;
 
     return (
-        <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col">
-            {!isSuccess && <ProgressBar currentStep={currentStep} totalSteps={STEPS.length} />}
+        <div className="min-h-screen bg-[#07090f] text-white selection:bg-indigo-500/30 overflow-x-hidden pt-6">
+            {/* Background elements */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-600/10 blur-[120px] rounded-full" />
+            </div>
 
-            <div className="flex-grow mt-8">
-                {currentStep === 1 && (
-                    <GoalStep
-                        value={formData.goal}
-                        onChange={(goal) => updateFormData({ goal })}
-                        onNext={nextStep}
-                    />
-                )}
-                {currentStep === 2 && (
-                    <LevelStep
-                        onNext={nextStep}
-                        onBack={prevStep}
-                    />
-                )}
-                {currentStep === 3 && (
-                    <TestStep
-                        onNext={nextStep}
-                        onBack={prevStep}
-                    />
-                )}
-                {currentStep === 4 && (
-                    <PreferencesStep
-                        data={formData}
-                        onChange={updateFormData}
-                        onNext={nextStep}
-                        onBack={prevStep}
-                    />
-                )}
-                {currentStep === 5 && (
-                    <SummaryStep
-                        data={formData}
-                        onBack={prevStep}
-                        onComplete={handleSubmit}
-                        isLoading={isLoading}
-                        isSuccess={isSuccess}
-                    />
+            <div className="max-w-2xl mx-auto px-6 py-12 relative z-10 flex flex-col min-h-screen">
+                <div className="flex items-center justify-between mb-12">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-black text-sm rounded-xl shadow-lg">LP</div>
+                        <h1 className="text-xl font-black tracking-tighter uppercase">LinguaPath</h1>
+                    </div>
+                    {!isSuccess && (
+                        <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+                            Step {currentStep} of {STEPS.length}
+                        </div>
+                    )}
+                </div>
+
+                {!isSuccess && <ProgressBar currentStep={currentStep} totalSteps={STEPS.length} />}
+
+                <div className="flex-grow mt-12">
+                    {currentStep === 1 && (
+                        <GoalStep
+                            value={formData.goal}
+                            onChange={(goal) => updateFormData({ goal })}
+                            onNext={nextStep}
+                        />
+                    )}
+                    {currentStep === 2 && (
+                        <LevelStep
+                            onNext={nextStep}
+                            onBack={prevStep}
+                        />
+                    )}
+                    {currentStep === 3 && (
+                        <TestStep
+                            onNext={nextStep}
+                            onBack={prevStep}
+                        />
+                    )}
+                    {currentStep === 4 && (
+                        <PreferencesStep
+                            data={formData}
+                            onChange={updateFormData}
+                            onNext={nextStep}
+                            onBack={prevStep}
+                        />
+                    )}
+                    {currentStep === 5 && (
+                        <SummaryStep
+                            data={formData}
+                            onBack={prevStep}
+                            onComplete={handleSubmit}
+                            isLoading={isLoading}
+                            isSuccess={isSuccess}
+                        />
+                    )}
+                </div>
+
+                {!isSuccess && (
+                    <div className="mt-12 text-center text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+                        Precision Language Learning &bull; AI Powered
+                    </div>
                 )}
             </div>
         </div>
     );
 }
+

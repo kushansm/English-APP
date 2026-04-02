@@ -29,7 +29,7 @@ class LearnerProfileController extends Controller
     public function latest(Request $request): JsonResponse
     {
         // For demonstration, we'll use a mocked user or the first user in the system.
-        $user = User::first();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
@@ -49,7 +49,7 @@ class LearnerProfileController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = User::first(); // Mocked
+        $user = $request->user();
 
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);

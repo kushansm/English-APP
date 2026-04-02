@@ -24,7 +24,7 @@ class AssessmentController extends Controller
     public function start(Request $request): JsonResponse
     {
         // For now, using the first user as a mock for authenticated user
-        $user = User::first() ?? User::factory()->create();
+        $user = $request->user();
 
         try {
             $data = $this->testService->startTest($user);
@@ -49,7 +49,7 @@ class AssessmentController extends Controller
         }
 
         // For now, using the first user as a mock for authenticated user
-        $user = User::first();
+        $user = $request->user();
 
         try {
             $data = $this->testService->submitAnswer(
@@ -69,7 +69,7 @@ class AssessmentController extends Controller
     public function result(Request $request): JsonResponse
     {
         // For now, using the first user as a mock for authenticated user
-        $user = User::first();
+        $user = $request->user();
         
         $assessment = $user->assessments()->latest()->with('skillScores')->first();
 

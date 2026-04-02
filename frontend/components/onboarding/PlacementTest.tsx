@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
 
 type Question = {
     id: number;
@@ -43,9 +44,8 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
     const startTest = async () => {
         setLoading(true);
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/onboarding/assessment/start", {
-                method: "POST",
-                headers: { "Accept": "application/json" }
+            const res = await apiFetch("/onboarding/assessment/start", {
+                method: "POST"
             });
             const data = await res.json();
             setState(data);
@@ -61,12 +61,8 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
 
         setIsSubmitting(true);
         try {
-            const res = await fetch("http://127.0.0.1:8000/api/onboarding/assessment/answer", {
+            const res = await apiFetch("/onboarding/assessment/answer", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
                 body: JSON.stringify({
                     question_id: state.question.id,
                     answer: answer
@@ -84,31 +80,39 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-24">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800"></div>
+            <div className="flex flex-col items-center justify-center py-24 space-y-4">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-indigo-500"></div>
+                <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Initializing AI Diagnostic...</p>
             </div>
         );
     }
 
     if (state?.status === "completed" && state.result) {
         return (
-            <div className="max-w-md mx-auto space-y-8 py-12 animate-in fade-in duration-700">
-                <div className="text-center space-y-2">
-                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Assessment Complete</h2>
-                    <div className="text-6xl font-black text-slate-900">{state.result.cefr_level}</div>
-                    <p className="text-slate-500 font-medium italic">Confirmed Proficiency Level</p>
+            <div className="max-w-md mx-auto space-y-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="text-center space-y-4">
+                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] bg-indigo-500/10 px-4 py-2 rounded-full border border-indigo-500/20">Assessment Complete</span>
+                    <div className="relative inline-block mt-4">
+                        <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full" />
+                        <div className="relative z-10 text-8xl font-black text-white tracking-tighter italic">
+                            {state.result.cefr_level}
+                        </div>
+                    </div>
+                    <p className="text-gray-400 font-medium text-lg leading-relaxed">
+                        Your proficiency level is confirmed as <span className="text-white font-bold">{state.result.cefr_level}</span>.
+                    </p>
                 </div>
 
-                <div className="space-y-6 pt-8">
+                <div className="bg-white/5 backdrop-blur-xl rounded-[40px] border border-white/10 p-8 space-y-8">
                     {state.result.skill_scores.map((skill) => (
-                        <div key={skill.skill} className="space-y-2">
-                            <div className="flex justify-between text-xs font-bold uppercase tracking-tight text-slate-600">
+                        <div key={skill.skill} className="space-y-3">
+                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
                                 <span>{skill.skill}</span>
-                                <span>{skill.score}%</span>
+                                <span className="text-gray-300">{skill.score}%</span>
                             </div>
-                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-slate-800 rounded-full transition-all duration-1000"
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-pink-500 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]"
                                     style={{ width: `${skill.score}%` }}
                                 ></div>
                             </div>
@@ -118,9 +122,19 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
 
                 <button
                     onClick={onComplete}
-                    className="w-full mt-12 py-4 px-6 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors"
+                    className="group relative w-full py-6 rounded-[30px] font-black text-xl text-white transition-all transform active:scale-[0.98] overflow-hidden"
+                    style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                        boxShadow: '0 20px 40px -10px rgba(99,102,241,0.5)'
+                    }}
                 >
-                    Continue to Preferences
+                    <span className="relative z-10 flex items-center justify-center gap-3 tracking-tight">
+                        Continue to Preferences
+                        <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </span>
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
             </div>
         );
@@ -131,29 +145,38 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
     const isFillInBlank = !state.question.options || state.question.options.length === 0;
 
     return (
-        <div className="max-w-xl mx-auto space-y-12 py-8">
+        <div className="max-w-xl mx-auto space-y-12 py-4 animate-in fade-in duration-500">
             {/* Progress */}
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <div className="flex justify-between items-end">
-                    <span className="text-3xl font-black text-slate-900">
-                        {state.progress?.current}
-                        <span className="text-slate-200 ml-1 italic font-normal text-xl">/ {state.progress?.total}</span>
-                    </span>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest pb-1">
-                        Adaptive Assessment • {state.question.skill}
-                    </span>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-5xl font-black text-white tracking-tighter">
+                            {state.progress?.current}
+                        </span>
+                        <span className="text-gray-600 font-bold text-xl uppercase tracking-widest italic">
+                            / {state.progress?.total}
+                        </span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                            AI Diagnostic Engine
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                            Module • {state.question.skill}
+                        </span>
+                    </div>
                 </div>
-                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-slate-800 transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-indigo-500 to-pink-500 transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                         style={{ width: `${(state.progress!.current / state.progress!.total) * 100}%` }}
                     ></div>
                 </div>
             </div>
 
             {/* Question Area */}
-            <div className="space-y-10">
-                <h3 className="text-2xl font-medium text-slate-800 leading-relaxed">
+            <div className="space-y-10 min-h-[300px] flex flex-col justify-center">
+                <h3 className="text-4xl font-extrabold text-white leading-tight tracking-tight">
                     {state.question.question_text}
                 </h3>
 
@@ -164,11 +187,14 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
                             value={textAnswer}
                             onChange={(e) => setTextAnswer(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && submitAnswer(textAnswer)}
-                            placeholder="Type your answer here..."
+                            placeholder="Type your response..."
                             autoFocus
-                            className="w-full p-4 text-xl border-b-2 border-slate-200 focus:border-slate-800 outline-none bg-transparent transition-colors placeholder:text-slate-200"
+                            className="w-full py-6 text-3xl font-bold bg-transparent border-b-2 border-white/10 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-700 text-white"
                         />
-                        <p className="text-xs text-slate-400 italic">Press Enter to submit</p>
+                        <div className="flex items-center gap-2 text-gray-500 font-bold uppercase tracking-widest text-[9px]">
+                            <kbd className="px-2 py-1 bg-white/5 rounded border border-white/10">Enter</kbd>
+                            <span>to confirm answer</span>
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
@@ -177,12 +203,19 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
                                 key={idx}
                                 onClick={() => submitAnswer(option)}
                                 disabled={isSubmitting}
-                                className="group p-5 rounded-xl border border-slate-100 bg-white hover:border-slate-800 hover:bg-slate-50 transition-all duration-150 text-left flex items-center gap-6 disabled:opacity-50"
+                                className="group relative p-6 rounded-[30px] bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 text-left flex items-center gap-6 disabled:opacity-50 overflow-hidden"
                             >
-                                <span className="text-xs font-bold text-slate-300 group-hover:text-slate-800 transition-colors uppercase tracking-widest">
-                                    Option {String.fromCharCode(65 + idx)}
+                                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <span className="flex-shrink-0 w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xs font-black text-gray-400 group-hover:text-indigo-400 transition-colors uppercase tracking-widest">
+                                    {String.fromCharCode(65 + idx)}
                                 </span>
-                                <span className="text-lg font-medium text-slate-700 group-hover:text-slate-900 font-serif">
+                                <span className="text-xl font-bold text-gray-300 group-hover:text-white transition-colors">
                                     {option}
                                 </span>
                             </button>
@@ -191,10 +224,10 @@ export function PlacementTest({ onComplete }: { onComplete: () => void }) {
                 )}
             </div>
 
-            {/* Minimal Subtext */}
-            <div className="pt-12 text-center">
-                <p className="text-[10px] text-slate-300 uppercase tracking-[0.2em] font-bold">
-                    English Proficiency Diagnostic • Academic Standard
+            {/* Footer */}
+            <div className="pt-8 text-center">
+                <p className="text-[10px] text-gray-600 uppercase tracking-[0.4em] font-black">
+                    Linguapath Academic Standard • V4.2
                 </p>
             </div>
         </div>
