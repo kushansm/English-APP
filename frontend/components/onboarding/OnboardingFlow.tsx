@@ -40,6 +40,8 @@ export default function OnboardingFlow() {
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState<OnboardingData>(INITIAL_DATA);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
     // Load from localStorage
     useEffect(() => {
@@ -54,13 +56,13 @@ export default function OnboardingFlow() {
 
     // Save to localStorage
     useEffect(() => {
-        if (isLoaded) {
+        if (isLoaded && !isSuccess) {
             localStorage.setItem(
                 "onboarding_progress",
                 JSON.stringify({ step: currentStep, data: formData })
             );
         }
-    }, [currentStep, formData, isLoaded]);
+    }, [currentStep, formData, isLoaded, isSuccess]);
 
     const updateFormData = (newData: Partial<OnboardingData>) => {
         setFormData((prev) => ({ ...prev, ...newData }));
@@ -78,11 +80,63 @@ export default function OnboardingFlow() {
         }
     };
 
+    const handleSubmit = async () => {
+        setIsLoading(true);
+        try {
+            // Map frontend data to backend fields
+            const backendData = {
+                target_exam: formData.goal,
+                target_level: "B1", // Placeholder
+                daily_minutes: formData.dailyMinutes,
+                learning_style: formData.learningStyle.toLowerCase(),
+                interests: formData.interests,
+                focus_areas: formData.focusAreas,
+                custom_focus: formData.customFocus,
+                target_date: "2026-12-31", // Placeholder
+                age_group: "25-34", // Placeholder
+            };
+
+            const response = await fetch("http://127.0.0.1:8000/api/onboarding/profile", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                body: JSON.stringify(backendData),
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                // Handle Laravel validation errors
+                if (responseData.errors) {
+                    const errorMessages = Object.values(responseData.errors).flat().join("\n");
+                    throw new Error(errorMessages);
+                }
+                throw new Error(responseData.message || "Failed to save profile");
+            }
+
+            setIsSuccess(true);
+            localStorage.removeItem("onboarding_progress");
+
+            // Optional: Redirect after a delay
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 3000);
+
+        } catch (error) {
+            console.error("Submission error:", error);
+            alert(error instanceof Error ? error.message : "An error occurred while saving your profile.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     if (!isLoaded) return null;
 
     return (
         <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col">
-            <ProgressBar currentStep={currentStep} totalSteps={STEPS.length} />
+            {!isSuccess && <ProgressBar currentStep={currentStep} totalSteps={STEPS.length} />}
 
             <div className="flex-grow mt-8">
                 {currentStep === 1 && (
@@ -116,7 +170,9 @@ export default function OnboardingFlow() {
                     <SummaryStep
                         data={formData}
                         onBack={prevStep}
-                        onComplete={() => alert("Generating Learning Plan...")}
+                        onComplete={handleSubmit}
+                        isLoading={isLoading}
+                        isSuccess={isSuccess}
                     />
                 )}
             </div>

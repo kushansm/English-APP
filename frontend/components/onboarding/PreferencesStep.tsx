@@ -24,10 +24,10 @@ export function PreferencesStep({
     };
 
     const toggleFocus = (area: string) => {
-        const next = data.focus_areas.includes(area)
-            ? data.focus_areas.filter(a => a !== area)
-            : [...data.focus_areas, area];
-        onChange({ focus_areas: next });
+        const next = data.focusAreas.includes(area)
+            ? data.focusAreas.filter(a => a !== area)
+            : [...data.focusAreas, area];
+        onChange({ focusAreas: next });
     };
 
     return (
@@ -45,10 +45,10 @@ export function PreferencesStep({
                         {[10, 20, 30, 60].map(mins => (
                             <button
                                 key={mins}
-                                onClick={() => onChange({ daily_minutes: mins })}
-                                className={`py-3 px-2 rounded-xl border-2 font-bold transition-all duration-200 ${data.daily_minutes === mins
-                                        ? "border-sky-500 bg-sky-50 text-sky-700"
-                                        : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"
+                                onClick={() => onChange({ dailyMinutes: mins })}
+                                className={`py-3 px-2 rounded-xl border-2 font-bold transition-all duration-200 ${data.dailyMinutes === mins
+                                    ? "border-sky-500 bg-sky-50 text-sky-700"
+                                    : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"
                                     }`}
                             >
                                 {mins}m
@@ -66,8 +66,8 @@ export function PreferencesStep({
                                 key={style}
                                 onClick={() => onChange({ learningStyle: style as any })}
                                 className={`py-3 px-2 rounded-xl border-2 font-bold transition-all duration-200 ${data.learningStyle === style
-                                        ? "border-sky-500 bg-sky-50 text-sky-700"
-                                        : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"
+                                    ? "border-sky-500 bg-sky-50 text-sky-700"
+                                    : "border-slate-100 bg-white hover:border-slate-200 text-slate-600"
                                     }`}
                             >
                                 {style}
@@ -85,8 +85,8 @@ export function PreferencesStep({
                                 key={interest}
                                 onClick={() => toggleInterest(interest)}
                                 className={`py-1.5 px-4 rounded-full border-2 font-semibold transition-all duration-200 ${data.interests.includes(interest)
-                                        ? "border-sky-500 bg-sky-500 text-white"
-                                        : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
+                                    ? "border-sky-500 bg-sky-500 text-white"
+                                    : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
                                     }`}
                             >
                                 {interest}
@@ -103,9 +103,9 @@ export function PreferencesStep({
                             <button
                                 key={area}
                                 onClick={() => toggleFocus(area)}
-                                className={`py-1.5 px-4 rounded-full border-2 font-semibold transition-all duration-200 ${data.focus_areas.includes(area)
-                                        ? "border-sky-500 bg-sky-500 text-white"
-                                        : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
+                                className={`py-1.5 px-4 rounded-full border-2 font-semibold transition-all duration-200 ${data.focusAreas.includes(area)
+                                    ? "border-sky-500 bg-sky-500 text-white"
+                                    : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
                                     }`}
                             >
                                 {area}
