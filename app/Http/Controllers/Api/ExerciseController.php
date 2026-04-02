@@ -52,6 +52,7 @@ class ExerciseController extends Controller
 
     /**
      * Get questions for a specific topic and difficulty.
+     * The 'topic' param can be a full task description or a skill keyword.
      */
     public function getQuestions(Request $request): JsonResponse
     {
@@ -62,30 +63,44 @@ class ExerciseController extends Controller
         $user = User::first(); // Mocked
         $topic = $request->topic;
 
+        // Detect skill from the topic string (helps when topic is a full task name)
+        $skillKeywords = ['grammar', 'vocabulary', 'reading', 'writing', 'listening', 'speaking'];
+        $skill = 'grammar'; // default
+        foreach ($skillKeywords as $kw) {
+            if (str_contains(strtolower($topic), $kw)) {
+                $skill = $kw;
+                break;
+            }
+        }
+
         // Get user's current difficulty for this topic
         $mastery = $user->masteryRecords()->where('topic', $topic)->first();
         $difficulty = $mastery ? $mastery->current_difficulty : 1;
 
-        // Fetch questions for the topic
-        // If not enough questions for exact difficulty, fallback to adjacent
-        $questions = \App\Models\Question::where('category', $topic)
-            ->where('difficulty_level', $difficulty)
+        // Try exact difficulty first, then fall back to any for that skill
+        $questions = \App\Models\Question::where('skill', $skill)
+            ->where('difficulty', $difficulty)
             ->inRandomOrder()
             ->limit(10)
             ->get();
 
         if ($questions->isEmpty()) {
-            // Fallback: get any questions for this topic
-            $questions = \App\Models\Question::where('category', $topic)
+            $questions = \App\Models\Question::where('skill', $skill)
                 ->inRandomOrder()
                 ->limit(10)
                 ->get();
         }
 
+        // Final fallback: any questions at all
+        if ($questions->isEmpty()) {
+            $questions = \App\Models\Question::inRandomOrder()->limit(10)->get();
+        }
+
         return response()->json([
-            'topic' => $topic,
+            'topic'      => $topic,
+            'skill'      => $skill,
             'difficulty' => $difficulty,
-            'questions' => $questions
+            'questions'  => $questions,
         ]);
     }
 
