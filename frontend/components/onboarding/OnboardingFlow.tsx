@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 export type OnboardingData = {
     goal: string;
     levelEstimationSkip: boolean;
+    manualLevel: string | null; // A1, A2, B1, B2, C1, C2
     dailyMinutes: number;
     learningStyle: "Active" | "Passive" | "Balanced";
     interests: string[];
@@ -24,6 +25,7 @@ export type OnboardingData = {
 const INITIAL_DATA: OnboardingData = {
     goal: "",
     levelEstimationSkip: false,
+    manualLevel: null,
     dailyMinutes: 20,
     learningStyle: "Balanced",
     interests: [],
@@ -73,12 +75,26 @@ export default function OnboardingFlow() {
     };
 
     const nextStep = () => {
+        // If we just finished Level Assessment (Step 2) and selected a manual level,
+        // skip Diagnostic Test (Step 3) and go to Preferences (Step 4).
+        if (currentStep === 2 && formData.manualLevel) {
+            setCurrentStep(4);
+            return;
+        }
+
         if (currentStep < STEPS.length) {
             setCurrentStep((prev) => prev + 1);
         }
     };
 
     const prevStep = () => {
+        // If we are on Preferences (Step 4) and manually selected a level,
+        // go back to Level Assessment (Step 2) and skip Diagnostic Test (Step 3).
+        if (currentStep === 4 && formData.manualLevel) {
+            setCurrentStep(2);
+            return;
+        }
+
         if (currentStep > 1) {
             setCurrentStep((prev) => prev - 1);
         }
@@ -87,23 +103,36 @@ export default function OnboardingFlow() {
     const handleSubmit = async () => {
         setIsLoading(true);
         try {
-            // Map frontend data to backend fields
+            // 1. If manual level selected, create/update assessment FIRST
+            if (formData.manualLevel) {
+                await apiFetch("/onboarding/assessment/result", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        type: 'diagnostic',
+                        overall_score: 0,
+                        cefr_level: formData.manualLevel
+                    })
+                });
+            }
+
+            // 2. Map frontend data to backend fields
             const backendData = {
                 target_exam: formData.goal,
-                target_level: "B1", // Placeholder - will be updated by diagnostic test result in real flow
+                target_level: formData.manualLevel || "B1", // Use selected level or default
                 daily_minutes: formData.dailyMinutes,
                 learning_style: formData.learningStyle.toLowerCase(),
                 interests: formData.interests,
                 focus_areas: formData.focusAreas,
                 custom_focus: formData.customFocus,
                 target_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
-                age_group: "25-34",
+                age_group: "Adult",
             };
 
             const response = await apiFetch("/onboarding/profile", {
                 method: "POST",
                 body: JSON.stringify(backendData),
             });
+            // ... rest of logic
 
             const responseData = await response.json();
 
@@ -174,6 +203,8 @@ export default function OnboardingFlow() {
                     )}
                     {currentStep === 2 && (
                         <LevelStep
+                            manualLevel={formData.manualLevel}
+                            onSelectManual={(lvl) => updateFormData({ manualLevel: lvl })}
                             onNext={nextStep}
                             onBack={prevStep}
                         />

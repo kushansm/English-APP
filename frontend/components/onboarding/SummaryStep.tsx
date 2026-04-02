@@ -57,6 +57,13 @@ export function SummaryStep({
                     </div>
 
                     <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                        <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Identified Proficiency</span>
+                        <span className="text-white font-bold bg-pink-500/10 px-4 py-2 rounded-2xl text-pink-400 border border-pink-500/20">
+                            {data.manualLevel ? `${data.manualLevel} Level` : "Assessment Result"}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between items-center pb-6 border-b border-white/5">
                         <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Daily Commitment</span>
                         <span className="text-white font-bold text-lg">{data.dailyMinutes} <span className="text-gray-500 text-sm font-normal">minutes</span></span>
                     </div>
