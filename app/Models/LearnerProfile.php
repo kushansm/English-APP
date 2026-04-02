@@ -18,12 +18,15 @@ class LearnerProfile extends Model
         'focus_areas',
         'custom_focus',
         'version',
+        'ai_summary',
+        'learning_plan',
     ];
 
     protected $casts = [
         'interests' => 'array',
         'focus_areas' => 'array',
         'target_date' => 'date',
+        'learning_plan' => 'array',
     ];
 
     /**

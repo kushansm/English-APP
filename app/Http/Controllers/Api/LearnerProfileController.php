@@ -9,13 +9,18 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+use App\Services\AiLearningPlanService;
+use App\Models\Assessment;
+
 class LearnerProfileController extends Controller
 {
     protected LearnerProfileService $profileService;
+    protected AiLearningPlanService $aiService;
 
-    public function __construct(LearnerProfileService $profileService)
+    public function __construct(LearnerProfileService $profileService, AiLearningPlanService $aiService)
     {
         $this->profileService = $profileService;
+        $this->aiService = $aiService;
     }
 
     /**
@@ -24,7 +29,6 @@ class LearnerProfileController extends Controller
     public function latest(Request $request): JsonResponse
     {
         // For demonstration, we'll use a mocked user or the first user in the system.
-        // In a real application, this would be $request->user().
         $user = User::first();
 
         if (!$user) {
@@ -45,7 +49,7 @@ class LearnerProfileController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = User::first(); // Mocked for demonstration.
+        $user = User::first(); // Mocked
 
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
@@ -68,6 +72,16 @@ class LearnerProfileController extends Controller
         }
 
         $profile = $this->profileService->createNewVersion($user, $validator->validated());
+
+        // Trigger AI Generation
+        $latestAssessment = $user->assessments()->latest()->first();
+        if ($latestAssessment) {
+            $aiData = $this->aiService->generatePlan($latestAssessment, $validator->validated());
+            $profile->update([
+                'ai_summary' => $aiData['summary'] ?? null,
+                'learning_plan' => $aiData['recommendations'] ?? null,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Profile created successfully',
