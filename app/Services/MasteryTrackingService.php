@@ -9,6 +9,13 @@ use Carbon\Carbon;
 
 class MasteryTrackingService
 {
+    protected AdaptiveLearningService $adaptiveService;
+
+    public function __construct(AdaptiveLearningService $adaptiveService)
+    {
+        $this->adaptiveService = $adaptiveService;
+    }
+
     /**
      * Record the result of an exercise and update mastery.
      */
@@ -16,12 +23,14 @@ class MasteryTrackingService
     {
         $record = MasteryRecord::firstOrCreate(
             ['user_id' => $user->id, 'topic' => $topic],
-            ['skill' => $skill, 'mastery_score' => 0, 'streak' => 0]
+            ['skill' => $skill, 'mastery_score' => 0, 'streak' => 0, 'current_difficulty' => 1]
         );
+
+        // Update adaptive counters first
+        $this->adaptiveService->updateCounters($record, $isCorrect);
 
         if ($isCorrect) {
             $record->streak += 1;
-            // mastery_score += 5 + (streak * 2)
             $increment = 5 + ($record->streak * 2);
             $record->mastery_score = min(100, $record->mastery_score + $increment);
         } else {
@@ -33,14 +42,19 @@ class MasteryTrackingService
             }
         }
 
+        // Get adaptive recommendation
+        $recommendation = $this->adaptiveService->getRecommendation($record);
+        
+        // Update current difficulty in record
+        $record->current_difficulty = $recommendation['next_difficulty'];
         $record->last_attempted_at = Carbon::now();
         $record->save();
 
-        return [
+        return array_merge($recommendation, [
             'mastery_score' => $record->mastery_score,
             'streak' => $record->streak,
             'needs_review' => $this->checkIfNeedsReview($user, $topic),
-        ];
+        ]);
     }
 
     protected function logError(User $user, string $topic, string $errorPattern): void

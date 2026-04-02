@@ -12,6 +12,9 @@ class MasteryRecord extends Model
         'skill',
         'mastery_score',
         'streak',
+        'current_difficulty',
+        'consecutive_correct',
+        'consecutive_incorrect',
         'last_attempted_at',
     ];
 
