@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Profile = {
     target_exam: string;
@@ -175,9 +176,14 @@ export default function LearningProfileScreen() {
             {/* Minimal Header */}
             <header className="bg-white border-b border-slate-200 py-6">
                 <div className="max-w-5xl mx-auto px-6 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-slate-900 flex items-center justify-center text-white font-bold text-xs">LP</div>
-                        <h1 className="text-lg font-bold tracking-tight uppercase">Learning Profile</h1>
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-slate-900 flex items-center justify-center text-white font-bold text-xs">LP</div>
+                            <h1 className="text-lg font-bold tracking-tight uppercase">Learning Profile</h1>
+                        </div>
+                        <Link href="/dashboard/analytics" className="text-[10px] font-black text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-all">
+                            View Analytics
+                        </Link>
                     </div>
                     <div className="text-right">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{profile?.target_exam} Objective</p>
@@ -223,8 +229,8 @@ export default function LearningProfileScreen() {
                                         key={week}
                                         onClick={() => setActiveWeek(week)}
                                         className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] transition-all ${activeWeek === week
-                                                ? "bg-slate-900 text-white"
-                                                : "text-slate-400 hover:text-slate-900"
+                                            ? "bg-slate-900 text-white"
+                                            : "text-slate-400 hover:text-slate-900"
                                             }`}
                                     >
                                         {week.split(':')[0]}
@@ -260,8 +266,8 @@ export default function LearningProfileScreen() {
                                                             className="flex items-center gap-4 cursor-pointer group/task"
                                                         >
                                                             <div className={`h-4 w-4 border flex items-center justify-center transition-all ${isDone
-                                                                    ? "bg-slate-900 border-slate-900"
-                                                                    : "border-slate-200 group-hover/task:border-slate-400"
+                                                                ? "bg-slate-900 border-slate-900"
+                                                                : "border-slate-200 group-hover/task:border-slate-400"
                                                                 }`}>
                                                                 {isDone && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M20 6L9 17l-5-5" /></svg>}
                                                             </div>
