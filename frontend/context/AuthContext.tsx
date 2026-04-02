@@ -20,6 +20,8 @@ interface AuthContextType {
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     updateProfileStatus: (completed: boolean) => void;
+    updateUser: (name: string) => void;
+    restartOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -61,6 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(updatedUser);
             localStorage.setItem('auth_user', JSON.stringify(updatedUser));
             document.cookie = `profile_completed=${completed ? 'true' : 'false'}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        }
+    };
+
+    const updateUser = (name: string) => {
+        if (user) {
+            const updatedUser = { ...user, name };
+            setUser(updatedUser);
+            localStorage.setItem('auth_user', JSON.stringify(updatedUser));
         }
     };
 
@@ -113,8 +123,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/login');
     };
 
+    const restartOnboarding = async () => {
+        if (token) {
+            await fetch(`${API_BASE}/onboarding/restart`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+            });
+            updateProfileStatus(false);
+            router.push('/onboarding');
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateProfileStatus }}>
+        <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateProfileStatus, updateUser, restartOnboarding }}>
             {children}
         </AuthContext.Provider>
     );

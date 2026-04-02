@@ -181,15 +181,15 @@ export default function LearningProfileScreen() {
                             <p className="text-sm font-medium">{assessment?.cefr_level || "N/A"} Proficiency</p>
                         </div>
                         {user && (
-                            <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-                                <span className="text-xs text-slate-500 font-medium hidden sm:block">{user.name}</span>
-                                <button
-                                    onClick={logout}
-                                    className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors"
-                                >
-                                    Sign Out
-                                </button>
-                            </div>
+                            <Link href="/dashboard/settings" className="flex items-center gap-3 border-l border-slate-200 pl-4 group hover:bg-slate-50 transition-colors">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-xs text-slate-900 font-bold group-hover:text-indigo-600 transition-colors">{user.name}</span>
+                                    <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Account Settings</span>
+                                </div>
+                                <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black group-hover:bg-indigo-600 transition-all uppercase">
+                                    {user.name.charAt(0)}
+                                </div>
+                            </Link>
                         )}
                     </div>
                 </div>

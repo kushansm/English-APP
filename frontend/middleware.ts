@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
 
     // If authenticated:
     if (token) {
-        // If profile is NOT completed and they are not on onboarding → redirect to onboarding
+        // If profile is NOT completed and they are not on onboarding or landing → redirect to onboarding
         if (!profileCompleted && !pathname.startsWith('/onboarding') && pathname !== '/') {
             return NextResponse.redirect(new URL('/onboarding', request.url));
         }
@@ -37,6 +37,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    // Apply middleware to all routes except static files and API
-    matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+    // Apply middleware to all routes except static files, Next.js internals, and API
+    matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/assessment/start',  [AssessmentController::class, 'start']);
         Route::post('/assessment/answer', [AssessmentController::class, 'answer']);
         Route::get('/assessment/result',  [AssessmentController::class, 'result']);
+        Route::post('/restart',           [LearnerProfileController::class, 'restart']);
     });
 
     // Learning Plan

@@ -84,8 +84,23 @@ class LearnerProfileController extends Controller
         }
 
         return response()->json([
-            'message' => 'Profile created successfully',
+            'message' => 'Profile updated successfully',
             'profile' => $profile
         ], 201);
+    }
+
+    /**
+     * Restart the onboarding process for the user.
+     */
+    public function restart(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Delete all profile-related data
+        $user->learnerProfiles()->delete();
+        $user->assessments()->delete();
+        $user->learningPlans()->delete();
+
+        return response()->json(['message' => 'Onboarding process restarted.']);
     }
 }
