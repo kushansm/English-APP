@@ -25,105 +25,85 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-            {/* Ambient orbs */}
-            <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]"
-                style={{ background: 'radial-gradient(circle, #6366f1, #8b5cf6)' }} />
-            <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full opacity-15 blur-[120px]"
-                style={{ background: 'radial-gradient(circle, #ec4899, #8b5cf6)' }} />
+        <div className="min-h-screen bg-[#07090f] text-white flex items-center justify-center px-4 relative overflow-hidden selection:bg-indigo-500/30">
+            {/* Ambient Background */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-600/10 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-pink-600/10 blur-[120px] rounded-full" />
+            </div>
 
-            <div className="relative w-full max-w-md">
-                {/* Card */}
-                <div
-                    className="rounded-2xl p-8 border"
-                    style={{
-                        background: 'rgba(17, 17, 40, 0.85)',
-                        backdropFilter: 'blur(24px)',
-                        borderColor: 'rgba(99, 102, 241, 0.25)',
-                        boxShadow: '0 25px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
-                    }}
-                >
-                    {/* Logo */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center gap-2 mb-4">
-                            <span className="text-3xl">🎓</span>
-                            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                                LinguaPath
-                            </span>
+            <div className="relative w-full max-w-md animate-in fade-in zoom-in duration-700">
+                {/* Glass Container */}
+                <div className="bg-white/5 border border-white/10 p-10 rounded-[40px] backdrop-blur-2xl shadow-2xl space-y-10">
+                    {/* Header */}
+                    <div className="text-center space-y-4">
+                        <div className="inline-flex items-center gap-3">
+                            <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-black text-xs rounded-xl shadow-lg">LP</div>
+                            <span className="text-2xl font-black tracking-tighter uppercase">LinguaPath</span>
                         </div>
-                        <h1 className="text-xl font-semibold text-white">Welcome back</h1>
-                        <p className="text-sm text-gray-400 mt-1">Sign in to continue your learning journey</p>
+                        <div className="space-y-1">
+                            <h1 className="text-xl font-black tracking-tight italic">System <span className="text-indigo-400">Entry</span></h1>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Synchronize Learning Profile</p>
+                        </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         {error && (
-                            <div className="rounded-lg px-4 py-3 text-sm text-red-300 border"
-                                style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }}>
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-6 py-4 text-xs font-bold text-red-400 animate-in slide-in-from-top-2">
                                 {error}
                             </div>
                         )}
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="you@example.com"
-                                required
-                                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-gray-500 outline-none transition-all"
-                                style={{
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(99,102,241,0.3)',
-                                }}
-                                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.7)')}
-                                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)')}
-                            />
-                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Access Identifier</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="your@identity.com"
+                                    required
+                                    className="w-full bg-white/5 border border-white/10 px-6 py-4 rounded-2xl text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] transition-all"
+                                />
+                            </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-gray-500 outline-none transition-all"
-                                style={{
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(99,102,241,0.3)',
-                                }}
-                                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.7)')}
-                                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)')}
-                            />
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest px-1">Security Key</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full bg-white/5 border border-white/10 px-6 py-4 rounded-2xl text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] transition-all"
+                                />
+                            </div>
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 rounded-xl font-semibold text-sm text-white relative overflow-hidden transition-all disabled:opacity-60"
+                            className="group relative w-full py-5 rounded-2xl font-black text-xs text-white uppercase tracking-[0.3em] transition-all transform active:scale-95 overflow-hidden disabled:opacity-50"
                             style={{
-                                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)',
-                                boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
+                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                boxShadow: '0 20px 40px -10px rgba(99,102,241,0.4)'
                             }}
                         >
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Signing in…
-                                </span>
-                            ) : 'Sign In'}
+                            <span className="relative z-10">{loading ? 'Processing...' : 'Establish Connection'}</span>
+                            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                     </form>
 
-                    <p className="mt-6 text-center text-sm text-gray-400">
-                        Don&apos;t have an account?{' '}
-                        <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                            Create one
+                    <div className="pt-4 text-center">
+                        <Link href="/signup" className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-[0.2em] transition-colors">
+                            Initialize New Account <span className="text-indigo-400 ml-1">→</span>
                         </Link>
-                    </p>
+                    </div>
                 </div>
+
+                <p className="mt-12 text-center text-[10px] font-black text-gray-700 uppercase tracking-[0.4em]">
+                    Academic Framework v2.1 • Secure Core
+                </p>
             </div>
         </div>
     );

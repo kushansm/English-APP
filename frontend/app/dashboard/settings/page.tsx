@@ -12,11 +12,13 @@ type Profile = {
     learning_style: string;
     interests: string[];
     focus_areas: string[];
+    cefr_level?: string; // Add current proficiency override
 };
 
 export default function SettingsPage() {
-    const { user, updateUser, restartOnboarding, logout } = useAuth();
+    const { user, profile: globalProfile, assessment, updateUser, restartOnboarding, logout, refreshProfile } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
+    const [currentLevel, setCurrentLevel] = useState(assessment?.cefr_level || "");
     const [name, setName] = useState(user?.name || "");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -30,6 +32,9 @@ export default function SettingsPage() {
                     const data = await res.json();
                     setProfile(data);
                 }
+                if (assessment) {
+                    setCurrentLevel(assessment.cefr_level);
+                }
             } catch (err) {
                 console.error("Failed to fetch profile:", err);
             } finally {
@@ -37,7 +42,7 @@ export default function SettingsPage() {
             }
         }
         fetchProfile();
-    }, []);
+    }, [assessment]);
 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,17 +59,19 @@ export default function SettingsPage() {
                 updateUser(name);
             }
 
-            // Update Profile
+            // Update Profile & Proficiency
             const res = await apiFetch("/onboarding/profile", {
                 method: "POST",
                 body: JSON.stringify({
                     ...profile,
+                    cefr_level: currentLevel,
                     target_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Maintain 90 day window
                     age_group: "Adult", // Maintain default
                 })
             });
 
             if (res.ok) {
+                await refreshProfile();
                 setMessage({ type: 'success', text: 'Profile updated successfully.' });
             } else {
                 setMessage({ type: 'error', text: 'Failed to update profile.' });
@@ -110,6 +117,13 @@ export default function SettingsPage() {
                         <div>
                             <h1 className="text-xl font-black tracking-tight">Settings</h1>
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Personalize your learning experience</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <div className="text-right hidden md:block">
+                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">{profile?.target_exam} English • {profile?.daily_minutes}m Daily</p>
+                            <p className="text-sm font-bold text-indigo-400 italic">{assessment?.cefr_level || "N/A"} Proficiency</p>
                         </div>
                     </div>
                 </div>
@@ -179,8 +193,8 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1">Current Level (CEFR)</label>
                                     <select
-                                        value={profile?.target_level}
-                                        onChange={(e) => setProfile(p => p ? { ...p, target_level: e.target.value } : null)}
+                                        value={currentLevel}
+                                        onChange={(e) => setCurrentLevel(e.target.value)}
                                         className="w-full bg-[#12141c] border border-white/10 rounded-2xl px-4 py-3.5 text-sm font-medium focus:border-indigo-500 outline-none transition-all appearance-none"
                                     >
                                         {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(lvl => (
@@ -199,8 +213,8 @@ export default function SettingsPage() {
                                             type="button"
                                             onClick={() => setProfile(p => p ? { ...p, daily_minutes: mins } : null)}
                                             className={`py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${profile?.daily_minutes === mins
-                                                    ? 'bg-indigo-500 border-indigo-400 text-white shadow-lg shadow-indigo-500/20'
-                                                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                                ? 'bg-indigo-500 border-indigo-400 text-white shadow-lg shadow-indigo-500/20'
+                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
                                                 }`}
                                         >
                                             {mins} Minutes

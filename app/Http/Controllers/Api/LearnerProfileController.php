@@ -65,18 +65,34 @@ class LearnerProfileController extends Controller
             'interests' => 'required|array',
             'focus_areas' => 'required|array',
             'custom_focus' => 'nullable|string',
+            'cefr_level' => 'nullable|string|regex:/^[A-C][1-2]$/',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $profile = $this->profileService->createNewVersion($user, $validator->validated());
+        $validated = $validator->validated();
+        $profile = $this->profileService->createNewVersion($user, $validated);
+
+        // Update current proficiency if provided
+        $latestAssessment = $user->assessments()->latest()->first();
+        if (isset($validated['cefr_level'])) {
+            if ($latestAssessment) {
+                $latestAssessment->update(['cefr_level' => $validated['cefr_level']]);
+            } else {
+                // Create a dummy assessment if none exists (unlikely in normal flow)
+                $latestAssessment = $user->assessments()->create([
+                    'type' => 'diagnostic',
+                    'overall_score' => 0,
+                    'cefr_level' => $validated['cefr_level']
+                ]);
+            }
+        }
 
         // Trigger AI Generation
-        $latestAssessment = $user->assessments()->latest()->first();
         if ($latestAssessment) {
-            $aiData = $this->aiService->generatePlan($latestAssessment, $validator->validated());
+            $aiData = $this->aiService->generatePlan($latestAssessment, $validated);
             $profile->update([
                 'ai_summary' => $aiData['summary'] ?? null,
                 'learning_plan' => $aiData['recommendations'] ?? null,
