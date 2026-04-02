@@ -21,3 +21,4 @@ Route::prefix('onboarding')->group(function () {
 
 Route::post('/plan/generate', [LearningPlanController::class, 'generate']);
 Route::get('/plan', [LearningPlanController::class, 'show']);
+Route::post('/plan/task/toggle', [LearningPlanController::class, 'toggleTask']);

@@ -25,11 +25,14 @@ type Assessment = {
 };
 
 type LearningPlan = {
+    id: number;
     plan_data: {
         [week: string]: {
             [day: string]: string[];
         };
     };
+    completed_tasks: string[] | null;
+    created_at: string;
 };
 
 export default function LearningProfileScreen() {
@@ -39,6 +42,10 @@ export default function LearningProfileScreen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeWeek, setActiveWeek] = useState<string | null>(null);
+
+    // Get current day of week (1-7, where 1 is Monday)
+    const todayNum = new Date().getDay() || 7;
+    const todayLabel = `Day ${todayNum}`;
 
     useEffect(() => {
         async function fetchData() {
@@ -71,8 +78,6 @@ export default function LearningProfileScreen() {
                     setActiveWeek(Object.keys(planData.plan_data)[0]);
                 } else if (planRes.status === 404) {
                     console.log("Learning plan not yet generated.");
-                } else {
-                    console.error("Plan fetch error:", await planRes.text());
                 }
             } catch (err) {
                 console.error("Fetch error:", err);
@@ -95,15 +100,42 @@ export default function LearningProfileScreen() {
                 const data = await res.json();
                 setPlan(data.plan);
                 setActiveWeek(Object.keys(data.plan.plan_data)[0]);
-            } else {
-                console.error("Generation failed:", await res.text());
-                setError("Expert tutoring system currently busy. Retrying synchronization...");
             }
         } catch (err) {
             console.error("Initialization error:", err);
-            setError("Critical synchronization error. Please check engine connectivity.");
+            setError("Critical synchronization error.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleTask = async (taskKey: string) => {
+        if (!plan) return;
+
+        // Optimistic UI update
+        const currentCompleted = plan.completed_tasks || [];
+        const isCompleted = currentCompleted.includes(taskKey);
+        const nextCompleted = isCompleted
+            ? currentCompleted.filter(k => k !== taskKey)
+            : [...currentCompleted, taskKey];
+
+        setPlan({ ...plan, completed_tasks: nextCompleted });
+
+        try {
+            const res = await fetch("http://127.0.0.1:8000/api/plan/task/toggle", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({ task_key: taskKey })
+            });
+            if (!res.ok) {
+                // Rollback on failure
+                setPlan({ ...plan, completed_tasks: currentCompleted });
+            }
+        } catch (err) {
+            setPlan({ ...plan, completed_tasks: currentCompleted });
         }
     };
 
@@ -138,85 +170,38 @@ export default function LearningProfileScreen() {
                     </div>
                 )}
 
-                {/* 1. AI Summary Box - Highlighted Card */}
+                {/* 1. AI Summary Card */}
                 <section className="space-y-4">
                     <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">AI Performance Synthesis</h2>
                     <div className="bg-slate-900 text-white p-10 rounded shadow-2xl relative overflow-hidden">
                         <div className="relative z-10 space-y-4">
-                            <p className="text-2xl font-serif leading-relaxed italic text-slate-100">
+                            <p className="text-xl font-serif leading-relaxed italic text-slate-100 max-w-2xl">
                                 "{profile?.ai_summary || "Our AI is currently synthesizing your performance data to generate a custom roadmap."}"
                             </p>
                             <div className="pt-4 flex items-center gap-2">
-                                <div className="h-1 w-8 bg-slate-700"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">Adaptive Tutor Intelligence</span>
+                                <div className="h-0.5 w-6 bg-slate-700"></div>
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] italic">Adaptive Tutor Intelligence</span>
                             </div>
-                        </div>
-                        {/* Subtle background graphic */}
-                        <div className="absolute -right-20 -bottom-20 opacity-5 pointer-events-none">
-                            <svg width="400" height="400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10" /><path d="M12 2v20M2 12h20" /></svg>
                         </div>
                     </div>
                 </section>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-4">
-                    {/* 2. Skill Breakdown - Precision Bars */}
-                    <section className="space-y-6">
-                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Diagnostic Competencies</h2>
-                        <div className="bg-white border border-slate-200 p-8 space-y-8">
-                            {assessment?.skill_scores && assessment.skill_scores.length > 0 ? (
-                                assessment.skill_scores.map((skill) => (
-                                    <div key={skill.skill} className="space-y-3">
-                                        <div className="flex justify-between items-baseline">
-                                            <label className="text-xs font-bold text-slate-600 uppercase tracking-widest">{skill.skill}</label>
-                                            <span className="text-sm font-black text-slate-900">{skill.score}%</span>
-                                        </div>
-                                        <div className="h-1 w-full bg-slate-100 overflow-hidden">
-                                            <div
-                                                className="h-full bg-slate-900 transition-all duration-1000 ease-out"
-                                                style={{ width: `${skill.score}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-slate-400 italic">Quantitative data pending assessment finalization.</p>
-                            )}
-                        </div>
-                    </section>
-
-                    {/* 3. Recommended Plan - Bullet List */}
-                    <section className="space-y-6">
-                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Strategic Roadmap</h2>
-                        <div className="bg-white border border-slate-200 p-8">
-                            <ul className="space-y-6">
-                                {profile?.learning_plan && profile.learning_plan.length > 0 ? (
-                                    profile.learning_plan.map((item, idx) => (
-                                        <li key={idx} className="flex gap-4 group">
-                                            <span className="text-xs font-black text-slate-300 transition-colors group-hover:text-slate-900">{String(idx + 1).padStart(2, '0')}</span>
-                                            <p className="text-sm text-slate-700 leading-relaxed font-medium transition-colors group-hover:text-slate-900">{item}</p>
-                                        </li>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-slate-400 italic">Actionable insights will appear here after your first lesson.</p>
-                                )}
-                            </ul>
-                        </div>
-                    </section>
-                </div>
-
-                {/* 4. Multi-Week Study Schedule */}
+                {/* 2. Interactive Learning Plan */}
                 {plan && (
-                    <section className="space-y-6 border-t border-slate-200 pt-12">
-                        <div className="flex justify-between items-end">
-                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Personalized Curricullum</h2>
-                            <div className="flex gap-2">
+                    <section className="space-y-8 border-t border-slate-200 pt-12">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Active Curricullum</h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Structured Weekly Targets</p>
+                            </div>
+                            <div className="flex gap-2 bg-white p-1 border border-slate-200">
                                 {Object.keys(plan.plan_data).map((week) => (
                                     <button
                                         key={week}
                                         onClick={() => setActiveWeek(week)}
-                                        className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border transition-all ${activeWeek === week
-                                            ? "bg-slate-900 text-white border-slate-900"
-                                            : "bg-white text-slate-400 border-slate-200 hover:border-slate-400"
+                                        className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] transition-all ${activeWeek === week
+                                                ? "bg-slate-900 text-white"
+                                                : "text-slate-400 hover:text-slate-900"
                                             }`}
                                     >
                                         {week.split(':')[0]}
@@ -225,29 +210,55 @@ export default function LearningProfileScreen() {
                             </div>
                         </div>
 
-                        <div className="bg-white border border-slate-200 p-8">
-                            <div className="mb-8">
-                                <h3 className="text-lg font-bold text-slate-900">{activeWeek}</h3>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Foundational Skills & Objective Alignment</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                                {activeWeek && Object.entries(plan.plan_data[activeWeek]).map(([day, tasks]) => (
-                                    <div key={day} className="space-y-3 p-4 bg-slate-50 border border-slate-100 rounded">
-                                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">{day}</h4>
-                                        <div className="space-y-2">
-                                            {tasks.map((task, i) => (
-                                                <p key={i} className="text-[10px] font-medium text-slate-600 leading-tight">• {task}</p>
-                                            ))}
+                        <div className="bg-white border border-slate-200 divide-y divide-slate-100">
+                            {activeWeek && Object.entries(plan.plan_data[activeWeek]).map(([day, tasks]) => {
+                                const isToday = day === todayLabel;
+                                return (
+                                    <div key={day} className={`group ${isToday ? "bg-slate-50/50" : ""}`}>
+                                        <div className="flex flex-col md:flex-row md:items-start p-8 gap-8">
+                                            <div className="w-24 shrink-0 space-y-1">
+                                                <h4 className={`text-xs font-black uppercase tracking-widest ${isToday ? "text-slate-900" : "text-slate-300 group-hover:text-slate-400"}`}>
+                                                    {day}
+                                                </h4>
+                                                {isToday && (
+                                                    <span className="inline-block px-1.5 py-0.5 bg-slate-900 text-white text-[8px] font-black uppercase tracking-tighter">
+                                                        Today
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 space-y-4">
+                                                {tasks.map((task, i) => {
+                                                    const taskKey = `${activeWeek}:${day}:${i}`;
+                                                    const isDone = plan.completed_tasks?.includes(taskKey);
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            onClick={() => toggleTask(taskKey)}
+                                                            className="flex items-center gap-4 cursor-pointer group/task"
+                                                        >
+                                                            <div className={`h-4 w-4 border flex items-center justify-center transition-all ${isDone
+                                                                    ? "bg-slate-900 border-slate-900"
+                                                                    : "border-slate-200 group-hover/task:border-slate-400"
+                                                                }`}>
+                                                                {isDone && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M20 6L9 17l-5-5" /></svg>}
+                                                            </div>
+                                                            <span className={`text-sm font-medium transition-all ${isDone ? "text-slate-300 line-through" : "text-slate-700 group-hover/task:text-slate-900"
+                                                                }`}>
+                                                                {task}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })}
                         </div>
                     </section>
                 )}
 
-                {/* 5. User Custom Focus */}
+                {/* 3. Skill & Data Overview */}
                 <section className="space-y-6 border-t border-slate-200 pt-12">
                     <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Learner Priorities</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

@@ -70,4 +70,38 @@ class LearningPlanController extends Controller
 
         return response()->json($plan);
     }
+
+    /**
+     * Toggle the completion status of a specific task.
+     */
+    public function toggleTask(Request $request): JsonResponse
+    {
+        $user = User::first(); // Mocked
+        $taskKey = $request->input('task_key'); // Format: "Week 1:Day 1:0"
+
+        if (!$taskKey) {
+            return response()->json(['message' => 'Task key required'], 400);
+        }
+
+        $plan = $user->latestLearningPlan;
+        if (!$plan) {
+            return response()->json(['message' => 'Plan not found'], 404);
+        }
+
+        $completed = $plan->completed_tasks ?? [];
+
+        // Toggle logic
+        if (in_array($taskKey, $completed)) {
+            $completed = array_values(array_diff($completed, [$taskKey]));
+        } else {
+            $completed[] = $taskKey;
+        }
+
+        $plan->update(['completed_tasks' => $completed]);
+
+        return response()->json([
+            'message' => 'Task toggled successfully',
+            'completed_tasks' => $completed
+        ]);
+    }
 }
