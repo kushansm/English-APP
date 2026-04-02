@@ -259,22 +259,38 @@ export default function LearningProfileScreen() {
                                                 {(tasks as string[]).map((task: string, i: number) => {
                                                     const taskKey = `${activeWeek}:${day}:${i}`;
                                                     const isDone = plan.completed_tasks?.includes(taskKey);
+                                                    const lessonHref = `/dashboard/lesson?task=${encodeURIComponent(task)}&key=${encodeURIComponent(taskKey)}`;
                                                     return (
-                                                        <div
-                                                            key={i}
-                                                            onClick={() => toggleTask(taskKey)}
-                                                            className="flex items-center gap-4 cursor-pointer group/task"
-                                                        >
-                                                            <div className={`h-4 w-4 border flex items-center justify-center transition-all ${isDone
-                                                                ? "bg-slate-900 border-slate-900"
-                                                                : "border-slate-200 group-hover/task:border-slate-400"
-                                                                }`}>
+                                                        <div key={i} className="flex items-center gap-4 group/task">
+                                                            {/* Checkbox to toggle completion */}
+                                                            <div
+                                                                onClick={() => toggleTask(taskKey)}
+                                                                className={`h-4 w-4 border flex items-center justify-center transition-all shrink-0 cursor-pointer ${isDone
+                                                                        ? "bg-slate-900 border-slate-900"
+                                                                        : "border-slate-200 group-hover/task:border-slate-400"
+                                                                    }`}
+                                                            >
                                                                 {isDone && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M20 6L9 17l-5-5" /></svg>}
                                                             </div>
-                                                            <span className={`text-sm font-medium transition-all ${isDone ? "text-slate-300 line-through" : "text-slate-700 group-hover/task:text-slate-900"
-                                                                }`}>
+                                                            {/* Task label — click to open lesson */}
+                                                            <Link
+                                                                href={lessonHref}
+                                                                className={`flex-1 text-sm font-medium transition-all ${isDone
+                                                                        ? "text-slate-300 line-through"
+                                                                        : "text-slate-700 hover:text-slate-900 hover:underline underline-offset-2"
+                                                                    }`}
+                                                            >
                                                                 {task}
-                                                            </span>
+                                                            </Link>
+                                                            {/* Open lesson button */}
+                                                            {!isDone && (
+                                                                <Link
+                                                                    href={lessonHref}
+                                                                    className="opacity-0 group-hover/task:opacity-100 text-[9px] font-black text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-all shrink-0"
+                                                                >
+                                                                    Start →
+                                                                </Link>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}

@@ -24,6 +24,7 @@ Route::get('/plan', [LearningPlanController::class, 'show']);
 Route::post('/plan/task/toggle', [LearningPlanController::class, 'toggleTask']);
 
 Route::post('/exercise/submit', [App\Http\Controllers\Api\ExerciseController::class, 'submitResult']);
+Route::get('/exercise/questions', [App\Http\Controllers\Api\ExerciseController::class, 'getQuestions']);
 Route::get('/mastery/overview', [App\Http\Controllers\Api\ExerciseController::class, 'overview']);
 
 Route::get('/progress/summary', [App\Http\Controllers\Api\ProgressController::class, 'summary']);

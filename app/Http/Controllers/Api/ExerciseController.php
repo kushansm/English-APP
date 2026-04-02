@@ -51,6 +51,45 @@ class ExerciseController extends Controller
     }
 
     /**
+     * Get questions for a specific topic and difficulty.
+     */
+    public function getQuestions(Request $request): JsonResponse
+    {
+        $request->validate([
+            'topic' => 'required|string',
+        ]);
+
+        $user = User::first(); // Mocked
+        $topic = $request->topic;
+
+        // Get user's current difficulty for this topic
+        $mastery = $user->masteryRecords()->where('topic', $topic)->first();
+        $difficulty = $mastery ? $mastery->current_difficulty : 1;
+
+        // Fetch questions for the topic
+        // If not enough questions for exact difficulty, fallback to adjacent
+        $questions = \App\Models\Question::where('category', $topic)
+            ->where('difficulty_level', $difficulty)
+            ->inRandomOrder()
+            ->limit(10)
+            ->get();
+
+        if ($questions->isEmpty()) {
+            // Fallback: get any questions for this topic
+            $questions = \App\Models\Question::where('category', $topic)
+                ->inRandomOrder()
+                ->limit(10)
+                ->get();
+        }
+
+        return response()->json([
+            'topic' => $topic,
+            'difficulty' => $difficulty,
+            'questions' => $questions
+        ]);
+    }
+
+    /**
      * Get the mastery overview for the user.
      */
     public function overview(): JsonResponse
