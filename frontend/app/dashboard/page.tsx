@@ -35,10 +35,25 @@ type LearningPlan = {
     created_at: string;
 };
 
+type MasteryRecord = {
+    topic: string;
+    skill: string;
+    mastery_score: number;
+    streak: number;
+    last_attempted_at: string;
+};
+
+type ErrorLog = {
+    topic: string;
+    error_pattern: string;
+    occurrence_count: number;
+};
+
 export default function LearningProfileScreen() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [assessment, setAssessment] = useState<Assessment | null>(null);
     const [plan, setPlan] = useState<LearningPlan | null>(null);
+    const [masteryData, setMasteryData] = useState<{ mastery: MasteryRecord[], errors: ErrorLog[] } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeWeek, setActiveWeek] = useState<string | null>(null);
@@ -50,7 +65,7 @@ export default function LearningProfileScreen() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [profileRes, assessmentRes, planRes] = await Promise.all([
+                const [profileRes, assessmentRes, planRes, masteryRes] = await Promise.all([
                     fetch("http://127.0.0.1:8000/api/onboarding/profile/latest", {
                         headers: { "Accept": "application/json" }
                     }),
@@ -58,6 +73,9 @@ export default function LearningProfileScreen() {
                         headers: { "Accept": "application/json" }
                     }),
                     fetch("http://127.0.0.1:8000/api/plan", {
+                        headers: { "Accept": "application/json" }
+                    }),
+                    fetch("http://127.0.0.1:8000/api/mastery/overview", {
                         headers: { "Accept": "application/json" }
                     })
                 ]);
@@ -78,6 +96,11 @@ export default function LearningProfileScreen() {
                     setActiveWeek(Object.keys(planData.plan_data)[0]);
                 } else if (planRes.status === 404) {
                     console.log("Learning plan not yet generated.");
+                }
+
+                if (masteryRes.ok) {
+                    const mData = await masteryRes.json();
+                    setMasteryData(mData);
                 }
             } catch (err) {
                 console.error("Fetch error:", err);
@@ -116,7 +139,7 @@ export default function LearningProfileScreen() {
         const currentCompleted = plan.completed_tasks || [];
         const isCompleted = currentCompleted.includes(taskKey);
         const nextCompleted = isCompleted
-            ? currentCompleted.filter(k => k !== taskKey)
+            ? currentCompleted.filter((k: string) => k !== taskKey)
             : [...currentCompleted, taskKey];
 
         setPlan({ ...plan, completed_tasks: nextCompleted });
@@ -227,7 +250,7 @@ export default function LearningProfileScreen() {
                                                 )}
                                             </div>
                                             <div className="flex-1 space-y-4">
-                                                {tasks.map((task, i) => {
+                                                {(tasks as string[]).map((task: string, i: number) => {
                                                     const taskKey = `${activeWeek}:${day}:${i}`;
                                                     const isDone = plan.completed_tasks?.includes(taskKey);
                                                     return (
@@ -258,7 +281,70 @@ export default function LearningProfileScreen() {
                     </section>
                 )}
 
-                {/* 3. Skill & Data Overview */}
+                {/* 3. Mastery & Expertise Overview */}
+                {masteryData && masteryData.mastery.length > 0 && (
+                    <section className="space-y-8 border-t border-slate-200 pt-12">
+                        <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Mastery & Expertise Overview</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            {/* Topic Proficiency */}
+                            <div className="bg-white border border-slate-200 p-8 space-y-8">
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Topic Proficiency (0-100)</h3>
+                                <div className="space-y-6">
+                                    {masteryData.mastery.map((m, idx) => (
+                                        <div key={idx} className="space-y-3">
+                                            <div className="flex justify-between items-baseline">
+                                                <div className="flex items-center gap-3">
+                                                    <label className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">{m.topic}</label>
+                                                    {m.streak > 1 && (
+                                                        <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[8px] font-black uppercase">🔥 {m.streak} Streak</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs font-black text-slate-900">{m.mastery_score}%</span>
+                                            </div>
+                                            <div className="h-0.5 w-full bg-slate-100 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-slate-900 transition-all duration-1000 ease-out"
+                                                    style={{ width: `${m.mastery_score}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Error Patterns & Reviews */}
+                            <div className="space-y-8">
+                                <div className="bg-slate-50 border border-slate-200 p-8 space-y-6">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Detected Error Patterns</h3>
+                                    <div className="space-y-4">
+                                        {masteryData.errors.length > 0 ? (
+                                            masteryData.errors.map((e, idx) => {
+                                                const needsReview = e.occurrence_count >= 3;
+                                                return (
+                                                    <div key={idx} className={`p-4 border ${needsReview ? "bg-red-50 border-red-100" : "bg-white border-slate-100"}`}>
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{e.topic}</span>
+                                                            {needsReview && (
+                                                                <span className="px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-tighter">Needs Review</span>
+                                                            )}
+                                                        </div>
+                                                        <p className={`text-xs font-bold ${needsReview ? "text-red-900" : "text-slate-800"}`}>{e.error_pattern}</p>
+                                                        <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Occurrences: {e.occurrence_count}</p>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <p className="text-xs text-slate-400 italic">No significant error patterns detected yet.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* 4. Diagnostic Overview */}
                 <section className="space-y-6 border-t border-slate-200 pt-12">
                     <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Learner Priorities</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

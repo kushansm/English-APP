@@ -22,3 +22,6 @@ Route::prefix('onboarding')->group(function () {
 Route::post('/plan/generate', [LearningPlanController::class, 'generate']);
 Route::get('/plan', [LearningPlanController::class, 'show']);
 Route::post('/plan/task/toggle', [LearningPlanController::class, 'toggleTask']);
+
+Route::post('/exercise/submit', [App\Http\Controllers\Api\ExerciseController::class, 'submitResult']);
+Route::get('/mastery/overview', [App\Http\Controllers\Api\ExerciseController::class, 'overview']);

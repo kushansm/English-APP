@@ -66,4 +66,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(LearningPlan::class)->latestOfMany();
     }
+
+    public function masteryRecords()
+    {
+        return $this->hasMany(MasteryRecord::class);
+    }
+
+    public function errorLogs()
+    {
+        return $this->hasMany(ErrorLog::class);
+    }
 }
